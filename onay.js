@@ -5,7 +5,7 @@
    Sayfa hiçbir veri saklamaz ve hiçbir yere göndermez; yalnızca kendisini açan Kokpit
    penceresine yanıt verir. Özel anahtar cihazdan çıkmaz. */
 "use strict";
-const SURUM = "1.0.1";
+const SURUM = "1.1.0";
 const RP_AD = "Akademik Kokpit";
 /* Yanıt yalnızca claude.ai üzerinde açılan Kokpit çerçevesine verilir. */
 const IZINLI_KOKEN = /^https:\/\/[0-9a-f-]{36}\.frame\.claudeusercontent\.com$/;
@@ -54,8 +54,14 @@ function yanitVer(p, yanit) {
     durum("Tamam. Kokpit'e iletildi; pencere kapanıyor.", "ok");
     setTimeout(() => { try { window.close(); } catch (e) {} }, 1200);
   } else {
-    durum("İmza hazır.", "ok");
-    $("kod").value = b64u(new TextEncoder().encode(JSON.stringify(ileti)));
+    const kod = b64u(new TextEncoder().encode(JSON.stringify(ileti)));
+    $("kod").value = kod;
+    /* claude.ai açılan pencerenin Kokpit'e bağını keser; imza panoya kopyalanır,
+       Yönetici Kokpit'te Cmd+V ile yapıştırır. Kopyalanırsa pencere kendiliğinden kapanır. */
+    navigator.clipboard.writeText(kod).then(() => {
+      durum("Kopyalandı. Kokpit'e dönüp Cmd+V ile yapıştırın; pencere kapanıyor.", "ok");
+      setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);
+    }).catch(() => { durum("İmza hazır. \"Kopyala\"ya basıp Kokpit'e yapıştırın.", "ok"); });
     $("tani").textContent = "(açan pencere: " + (window.opener ? "var" : "yok") + " · köken: " + String(p.o || "yok").slice(0, 80) + ")";
     $("kopya").hidden = false;
   }
