@@ -5,7 +5,7 @@
    Sayfa hiçbir veri saklamaz ve hiçbir yere göndermez; yalnızca kendisini açan Kokpit
    penceresine yanıt verir. Özel anahtar cihazdan çıkmaz. */
 "use strict";
-const SURUM = "1.0.0";
+const SURUM = "1.0.1";
 const RP_AD = "Akademik Kokpit";
 /* Yanıt yalnızca claude.ai üzerinde açılan Kokpit çerçevesine verilir. */
 const IZINLI_KOKEN = /^https:\/\/[0-9a-f-]{36}\.frame\.claudeusercontent\.com$/;
@@ -42,9 +42,12 @@ function istekOku() {
 
 function yanitVer(p, yanit) {
   const ileti = Object.assign({ kokpitOnay: 1, surum: SURUM, n: p.n, tur: p.tur }, yanit);
-  const koken = typeof p.o === "string" && IZINLI_KOKEN.test(p.o) ? p.o : null;
+  /* Kokpit çerçevesinin kökeni tarayıcıda gizli ("null") görünebilir; o durumda yanıt
+     yalnızca bu pencereyi açan pencereye verilir. Güvenlik kanaldan değil imzadan gelir:
+     Kokpit ve görevler imzayı açık anahtarla ve onaylanan içerikle doğrular. */
+  const koken = typeof p.o === "string" && IZINLI_KOKEN.test(p.o) ? p.o : "*";
   let gonderildi = false;
-  if (koken && window.opener) {
+  if (window.opener) {
     try { window.opener.postMessage(ileti, koken); gonderildi = true; } catch (e) {}
   }
   if (gonderildi) {
@@ -53,6 +56,7 @@ function yanitVer(p, yanit) {
   } else {
     durum("İmza hazır.", "ok");
     $("kod").value = b64u(new TextEncoder().encode(JSON.stringify(ileti)));
+    $("tani").textContent = "(açan pencere: " + (window.opener ? "var" : "yok") + " · köken: " + String(p.o || "yok").slice(0, 80) + ")";
     $("kopya").hidden = false;
   }
 }
